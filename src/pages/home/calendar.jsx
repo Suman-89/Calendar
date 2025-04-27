@@ -2,18 +2,69 @@ import FullCalendar from "@fullcalendar/react";
 import dayGridPlugin from "@fullcalendar/daygrid";
 import timeGridPlugin from "@fullcalendar/timegrid";
 import interactionPlugin from "@fullcalendar/interaction";
-import listPlugin from '@fullcalendar/list';
+import listPlugin from "@fullcalendar/list";
 import React, { useEffect, useState } from "react";
 
 export default function Calendar() {
   const [events, setEvents] = useState([
     {
-      title: "Test Event",
+      title: "Event",
       date: new Date().toISOString().split("T")[0],
     },
   ]);
   const [view, setView] = useState("calendar"); // 'calendar' or 'table'
   const [editingEvent, setEditingEvent] = useState(null);
+  const [showAddModal, setShowAddModal] = useState(false);
+  const [newEventData, setNewEventData] = useState({
+    title: "",
+    image: "",
+    color: "#3788d8",
+    startDate: "",
+    startTime: "",
+    endDate: "",
+    endTime: "",
+  });
+
+  const handleDateClick = (arg) => {
+    setNewEventData((prev) => ({
+      ...prev,
+      startDate: arg.dateStr,
+      endDate: arg.dateStr,
+    }));
+    setShowAddModal(true);
+  };
+
+  const handleAddEvent = () => {
+    const { title, image, color, startDate, startTime, endDate, endTime } =
+      newEventData;
+    if (title && startDate && startTime && endDate && endTime) {
+      const start = new Date(`${startDate}T${startTime}`).toISOString();
+      const end = new Date(`${endDate}T${endTime}`).toISOString();
+
+      const newEvent = {
+        id: Date.now(),
+        title,
+        image,
+        color,
+        start,
+        end,
+      };
+
+      setEvents([...events, newEvent]);
+      setShowAddModal(false);
+      setNewEventData({
+        title: "",
+        image: "",
+        color: "#3788d8",
+        startDate: "",
+        startTime: "",
+        endDate: "",
+        endTime: "",
+      });
+    }
+  };
+
+  console.log(events, "events");
 
   const LOCAL_STORAGE_KEY = "calendarEvents";
 
@@ -28,31 +79,13 @@ export default function Calendar() {
     localStorage.setItem(LOCAL_STORAGE_KEY, JSON.stringify(events));
   }, [events]);
 
-  const handleDateClick = (arg) => {
-    const title = prompt("Enter event title:");
-    const image = prompt("Enter image URL:");
-    const color = prompt("Enter event color:");
-    const startDate = prompt("Enter start date (YYYY-MM-DD):");
-    const startTime = prompt("Enter start time (HH:mm):");
-    const endDate = prompt("Enter end date (YYYY-MM-DD):");
-    const endTime = prompt("Enter end time (HH:mm):");
-
-    if (title && startDate && startTime && endDate && endTime) {
-      const newEvent = {
-        title,
-        image,
-        color,
-        start: `${startDate}T${startTime}`,
-        end: `${endDate}T${endTime}`,
-      };
-      setEvents([...events, newEvent]);
-    }
-  };
-
   const handleEventClick = (info) => {
     const event = info.event;
     const updatedEvent = {
-      ...event.extendedProps,
+      id: event.id,
+      title: event.title,
+      image: event.extendedProps.image || '',
+      color: event.backgroundColor,
       start: event.startStr,
       end: event.endStr,
     };
@@ -61,7 +94,7 @@ export default function Calendar() {
   const handleSaveEvent = () => {
     if (editingEvent) {
       const updatedEvents = events.map((event) =>
-        event.title === editingEvent.title ? editingEvent : event
+        event.id === editingEvent.id ? editingEvent : event
       );
       setEvents(updatedEvents);
       setEditingEvent(null);
@@ -182,85 +215,224 @@ export default function Calendar() {
         </button>
         {view === "calendar" ? renderCalendarView() : renderTableView()}
         {editingEvent && (
-  <div className="modal show d-block" tabIndex="-1">
-    <div className="modal-dialog">
-      <div className="modal-content">
-        <div className="modal-header">
-          <h5 className="modal-title">Edit Event</h5>
-          <button className="btn-close" onClick={handleCancelEdit}></button>
-        </div>
-        <div className="modal-body">
-          <div className="mb-2">
-            <label>Title</label>
-            <input
-              className="form-control"
-              value={editingEvent.title}
-              onChange={(e) =>
-                setEditingEvent({ ...editingEvent, title: e.target.value })
-              }
-            />
+          <div className="modal show d-block" tabIndex="-1">
+            <div className="modal-dialog">
+              <div className="modal-content">
+                <div className="modal-header">
+                  <h5 className="modal-title">Edit Event</h5>
+                  <button
+                    className="btn-close"
+                    onClick={handleCancelEdit}
+                  ></button>
+                </div>
+                <div className="modal-body">
+                  <div className="mb-2">
+                    <label>Title</label>
+                    <input
+                      className="form-control"
+                      value={editingEvent.title}
+                      onChange={(e) =>
+                        setEditingEvent({
+                          ...editingEvent,
+                          title: e.target.value,
+                        })
+                      }
+                    />
+                  </div>
+                  <div className="mb-2">
+                    <label>Image URL</label>
+                    <input
+                      className="form-control"
+                      value={editingEvent.image || ""}
+                      onChange={(e) =>
+                        setEditingEvent({
+                          ...editingEvent,
+                          image: e.target.value,
+                        })
+                      }
+                    />
+                  </div>
+                  <div className="mb-2">
+                    <label>Start Date & Time</label>
+                    <input
+                      type="datetime-local"
+                      className="form-control"
+                      value={editingEvent.start?.slice(0, 16)}
+                      onChange={(e) =>
+                        setEditingEvent({
+                          ...editingEvent,
+                          start: e.target.value,
+                        })
+                      }
+                    />
+                  </div>
+                  <div className="mb-2">
+                    <label>End Date & Time</label>
+                    <input
+                      type="datetime-local"
+                      className="form-control"
+                      value={editingEvent.end?.slice(0, 16)}
+                      onChange={(e) =>
+                        setEditingEvent({
+                          ...editingEvent,
+                          end: e.target.value,
+                        })
+                      }
+                    />
+                  </div>
+                  <div className="mb-2">
+                    <label>Color</label>
+                    <input
+                      type="color"
+                      className="form-control form-control-color"
+                      value={editingEvent.color || "#3788d8"}
+                      onChange={(e) =>
+                        setEditingEvent({
+                          ...editingEvent,
+                          color: e.target.value,
+                        })
+                      }
+                    />
+                  </div>
+                </div>
+                <div className="modal-footer">
+                  <button className="btn btn-success" onClick={handleSaveEvent}>
+                    Save
+                  </button>
+                  <button
+                    className="btn btn-danger"
+                    onClick={handleDeleteEvent}
+                  >
+                    Delete
+                  </button>
+                  <button
+                    className="btn btn-secondary"
+                    onClick={handleCancelEdit}
+                  >
+                    Cancel
+                  </button>
+                </div>
+              </div>
+            </div>
           </div>
-          <div className="mb-2">
-            <label>Image URL</label>
-            <input
-              className="form-control"
-              value={editingEvent.image || ''}
-              onChange={(e) =>
-                setEditingEvent({ ...editingEvent, image: e.target.value })
-              }
-            />
-          </div>
-          <div className="mb-2">
-            <label>Start Date & Time</label>
-            <input
-              type="datetime-local"
-              className="form-control"
-              value={editingEvent.start?.slice(0, 16)}
-              onChange={(e) =>
-                setEditingEvent({ ...editingEvent, start: e.target.value })
-              }
-            />
-          </div>
-          <div className="mb-2">
-            <label>End Date & Time</label>
-            <input
-              type="datetime-local"
-              className="form-control"
-              value={editingEvent.end?.slice(0, 16)}
-              onChange={(e) =>
-                setEditingEvent({ ...editingEvent, end: e.target.value })
-              }
-            />
-          </div>
-          <div className="mb-2">
-            <label>Color</label>
-            <input
-              type="color"
-              className="form-control form-control-color"
-              value={editingEvent.color || '#3788d8'}
-              onChange={(e) =>
-                setEditingEvent({ ...editingEvent, color: e.target.value })
-              }
-            />
-          </div>
-        </div>
-        <div className="modal-footer">
-          <button className="btn btn-success" onClick={handleSaveEvent}>
-            Save
-          </button>
-          <button className="btn btn-danger" onClick={handleDeleteEvent}>
-            Delete
-          </button>
-          <button className="btn btn-secondary" onClick={handleCancelEdit}>
-            Cancel
-          </button>
-        </div>
+        )}
       </div>
-    </div>
-  </div>
-)}
-
-      </div>
+      {showAddModal && (
+        <div className="modal show d-block" tabIndex="-1">
+          <div className="modal-dialog">
+            <div className="modal-content">
+              <div className="modal-header">
+                <h5 className="modal-title">Add Event</h5>
+                <button
+                  className="btn-close"
+                  onClick={() => setShowAddModal(false)}
+                ></button>
+              </div>
+              <div className="modal-body">
+                {["title", "image"].map((field) => (
+                  <div className="mb-2" key={field}>
+                    <label className="form-label text-capitalize">
+                      {field}
+                    </label>
+                    <input
+                      className="form-control"
+                      type="text"
+                      value={newEventData[field]}
+                      onChange={(e) =>
+                        setNewEventData({
+                          ...newEventData,
+                          [field]: e.target.value,
+                        })
+                      }
+                    />
+                  </div>
+                ))}
+                <div className="mb-2">
+                  <label>Start Date</label>
+                  <input
+                    type="date"
+                    className="form-control"
+                    value={newEventData.startDate}
+                    onChange={(e) =>
+                      setNewEventData({
+                        ...newEventData,
+                        startDate: e.target.value,
+                      })
+                    }
+                  />
+                </div>
+                <div className="mb-2">
+                  <label>Start Time</label>
+                  <input
+                    type="time"
+                    className="form-control"
+                    value={newEventData.startTime}
+                    onChange={(e) =>
+                      setNewEventData({
+                        ...newEventData,
+                        startTime: e.target.value,
+                      })
+                    }
+                  />
+                </div>
+                <div className="mb-2">
+                  <label>End Date</label>
+                  <input
+                    type="date"
+                    className="form-control"
+                    value={newEventData.endDate}
+                    onChange={(e) =>
+                      setNewEventData({
+                        ...newEventData,
+                        endDate: e.target.value,
+                      })
+                    }
+                  />
+                </div>
+                <div className="mb-2">
+                  <label>End Time</label>
+                  <input
+                    type="time"
+                    className="form-control"
+                    value={newEventData.endTime}
+                    onChange={(e) =>
+                      setNewEventData({
+                        ...newEventData,
+                        endTime: e.target.value,
+                      })
+                    }
+                  />
+                </div>
+                <div className="mb-2">
+                  <label>Color</label>
+                  <input
+                    type="color"
+                    className="form-control form-control-color"
+                    value={newEventData.color}
+                    onChange={(e) =>
+                      setNewEventData({
+                        ...newEventData,
+                        color: e.target.value,
+                      })
+                    }
+                  />
+                </div>
+              </div>
+              <div className="modal-footer">
+                <button className="btn btn-success" onClick={handleAddEvent}>
+                  Add
+                </button>
+                <button
+                  className="btn btn-secondary"
+                  onClick={() => setShowAddModal(false)}
+                >
+                  Cancel
+                </button>
+              </div>
+            </div>
+          </div>
+        </div>
+      )}
     </>
   );
 }
