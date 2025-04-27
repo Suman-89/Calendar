@@ -13,7 +13,7 @@ export default function Calendar() {
     },
   ]);
   const [view, setView] = useState("calendar"); // 'calendar' or 'table'
-  const [editingEvent, setEditingEvent] = useState(null);
+  const [editingEvent, setEditingEvent] = useState();
   const [showAddModal, setShowAddModal] = useState(false);
   const [newEventData, setNewEventData] = useState({
     title: "",
@@ -42,7 +42,7 @@ export default function Calendar() {
       const end = new Date(`${endDate}T${endTime}`).toISOString();
 
       const newEvent = {
-        id: Date.now(),
+        id: String(Date.now()),
         title,
         image,
         color,
@@ -64,7 +64,7 @@ export default function Calendar() {
     }
   };
 
-  console.log(events, "events");
+  // console.log(events, "events");
 
   const LOCAL_STORAGE_KEY = "calendarEvents";
 
@@ -79,12 +79,13 @@ export default function Calendar() {
     localStorage.setItem(LOCAL_STORAGE_KEY, JSON.stringify(events));
   }, [events]);
 
+
   const handleEventClick = (info) => {
     const event = info.event;
     const updatedEvent = {
-      id: event.id,
+      id: event.id.toString(),
       title: event.title,
-      image: event.extendedProps.image || '',
+      image: event.extendedProps.image,
       color: event.backgroundColor,
       start: event.startStr,
       end: event.endStr,
@@ -92,14 +93,27 @@ export default function Calendar() {
     setEditingEvent(updatedEvent);
   };
   const handleSaveEvent = () => {
-    if (editingEvent) {
-      const updatedEvents = events.map((event) =>
-        event.id === editingEvent.id ? editingEvent : event
-      );
-      setEvents(updatedEvents);
-      setEditingEvent(null);
+    if (editingEvent && editingEvent.id) {
+      try {
+        const updatedEvent = {
+          ...editingEvent,
+          start: new Date(editingEvent.start).toISOString(),
+          end: new Date(editingEvent.end).toISOString(),
+        };
+  
+        const updatedEvents = events.map((event) =>
+          event.id === updatedEvent.id ? updatedEvent : event
+        );
+  
+        setEvents(updatedEvents);
+        setEditingEvent(null);
+      } catch (error) {
+        console.error("Error updating event:", error);
+        alert("Please enter valid date and time values.");
+      }
     }
   };
+  
 
   const handleDeleteEvent = () => {
     if (editingEvent) {
@@ -152,7 +166,7 @@ export default function Calendar() {
               <td>
                 <button
                   className="btn btn-sm btn-info"
-                  onClick={() => handleSaveEvent(setEditingEvent(event))}
+                  onClick={() =>setEditingEvent(event)}
                 >
                   Edit
                 </button>
@@ -182,7 +196,12 @@ export default function Calendar() {
         center: "title",
         right: "dayGridMonth,timeGridWeek,timeGridDay,listWeek",
       }}
-      events={events}
+      // events={events}
+      events={events.map((event) => ({
+        ...event,
+        backgroundColor: event.color,
+        borderColor: event.color,
+      }))}
       dateClick={handleDateClick}
       eventClick={handleEventClick}
       editable={true}
@@ -257,7 +276,7 @@ export default function Calendar() {
                     <input
                       type="datetime-local"
                       className="form-control"
-                      value={editingEvent.start?.slice(0, 16)}
+                      value={editingEvent.start? editingEvent.start.slice(0, 16):""}
                       onChange={(e) =>
                         setEditingEvent({
                           ...editingEvent,
