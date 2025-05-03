@@ -79,7 +79,6 @@ export default function Calendar() {
     localStorage.setItem(LOCAL_STORAGE_KEY, JSON.stringify(events));
   }, [events]);
 
-
   const handleEventClick = (info) => {
     const event = info.event;
     const updatedEvent = {
@@ -100,11 +99,11 @@ export default function Calendar() {
           start: new Date(editingEvent.start).toISOString(),
           end: new Date(editingEvent.end).toISOString(),
         };
-  
+
         const updatedEvents = events.map((event) =>
           event.id === updatedEvent.id ? updatedEvent : event
         );
-  
+
         setEvents(updatedEvents);
         setEditingEvent(null);
       } catch (error) {
@@ -113,7 +112,6 @@ export default function Calendar() {
       }
     }
   };
-  
 
   const handleDeleteEvent = () => {
     if (editingEvent) {
@@ -166,7 +164,7 @@ export default function Calendar() {
               <td>
                 <button
                   className="btn btn-sm btn-info"
-                  onClick={() =>setEditingEvent(event)}
+                  onClick={() => setEditingEvent(event)}
                 >
                   Edit
                 </button>
@@ -192,7 +190,7 @@ export default function Calendar() {
       plugins={[dayGridPlugin, timeGridPlugin, interactionPlugin, listPlugin]}
       initialView="dayGridMonth"
       headerToolbar={{
-        left: "prev,next today",
+        left: "prev,next, today",
         center: "title",
         right: "dayGridMonth,timeGridWeek,timeGridDay,listWeek",
       }}
@@ -259,24 +257,45 @@ export default function Calendar() {
                     />
                   </div>
                   <div className="mb-2">
-                    <label>Image URL</label>
+                    <label>Image</label>
                     <input
+                      type="file"
                       className="form-control"
-                      value={editingEvent.image || ""}
-                      onChange={(e) =>
-                        setEditingEvent({
-                          ...editingEvent,
-                          image: e.target.value,
-                        })
-                      }
+                      accept="image/*"
+                      onChange={(e) => {
+                        const file = e.target.files[0];
+                        if (file) {
+                          const reader = new FileReader();
+                          reader.onloadend = () => {
+                            setEditingEvent({
+                              ...editingEvent,
+                              image: reader.result,
+                            });
+                          };
+                          reader.readAsDataURL(file);
+                        }
+                      }}
                     />
+                    {editingEvent.image && (
+                      <img
+                        src={editingEvent.image}
+                        alt="Preview"
+                        className="mt-2"
+                        style={{ width: "100px" }}
+                      />
+                    )}
                   </div>
+
                   <div className="mb-2">
                     <label>Start Date & Time</label>
                     <input
                       type="datetime-local"
                       className="form-control"
-                      value={editingEvent.start? editingEvent.start.slice(0, 16):""}
+                      value={
+                        editingEvent.start
+                          ? editingEvent.start.slice(0, 16)
+                          : ""
+                      }
                       onChange={(e) =>
                         setEditingEvent({
                           ...editingEvent,
@@ -348,24 +367,54 @@ export default function Calendar() {
                 ></button>
               </div>
               <div className="modal-body">
-                {["title", "image"].map((field) => (
-                  <div className="mb-2" key={field}>
-                    <label className="form-label text-capitalize">
-                      {field}
-                    </label>
-                    <input
-                      className="form-control"
-                      type="text"
-                      value={newEventData[field]}
-                      onChange={(e) =>
-                        setNewEventData({
-                          ...newEventData,
-                          [field]: e.target.value,
-                        })
+                {/* Title Field */}
+                <div className="mb-2">
+                  <label className="form-label">Title</label>
+                  <input
+                    className="form-control"
+                    type="text"
+                    value={newEventData.title}
+                    onChange={(e) =>
+                      setNewEventData({
+                        ...newEventData,
+                        title: e.target.value,
+                      })
+                    }
+                  />
+                </div>
+
+                {/* Image Upload Field */}
+                <div className="mb-2">
+                  <label className="form-label">Image</label>
+                  <input
+                    type="file"
+                    accept="image/*"
+                    className="form-control"
+                    onChange={(e) => {
+                      const file = e.target.files[0];
+                      if (file) {
+                        const reader = new FileReader();
+                        reader.onloadend = () => {
+                          setNewEventData({
+                            ...newEventData,
+                            image: reader.result, // Base64 data
+                          });
+                        };
+                        reader.readAsDataURL(file);
                       }
+                    }}
+                  />
+                  {/* Optional preview */}
+                  {newEventData.image && (
+                    <img
+                      src={newEventData.image}
+                      alt="Preview"
+                      className="mt-2"
+                      style={{ width: "100px", height: "auto" }}
                     />
-                  </div>
-                ))}
+                  )}
+                </div>
+
                 <div className="mb-2">
                   <label>Start Date</label>
                   <input
